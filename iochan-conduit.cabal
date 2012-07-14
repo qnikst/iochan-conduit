@@ -21,6 +21,7 @@ Library
   Exposed-modules:     
     Data.Conduit.Chan
     Control.Concurrent.BChan
+    Control.Concurrent.BMChan
   Build-depends:       base
                      , conduit == 0.5.*
                      , transformers == 0.3.*
