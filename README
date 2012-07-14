@@ -1,0 +1,10 @@
+Library for making conduit message passing via
+Control.Concurrent primitives, it can be faster than
+using STM in some cases, but do not allow all functionality
+that STM chans has.
+
+3 basic primitives will be provided:
+
+ * simple Chan as InfiniteChan
+ * wrapper over Chan as EndedChan
+ * bounded Chan as BChan
