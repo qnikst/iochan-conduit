@@ -21,6 +21,7 @@ module Control.Concurrent.BChan
 import Control.Exception (mask_)
 import Prelude hiding (tail, head)
 import Control.Concurrent
+import Control.Monad
 import Data.DList
 
 import System.IO.Unsafe
@@ -39,7 +40,7 @@ writeBChan :: BChan a -> a -> IO ()
 writeBChan (BChan r w d) v = do
   waitQSem w    -- wait for data place to become avaliable
   mask_ $ do
-      modifyMVar_ d (return . (flip snoc v))
+      modifyMVar_ d (return . (`snoc` v))
       signalQSem r -- mark new data as avaliable 
 
 readBChan :: BChan a -> IO a
@@ -63,6 +64,6 @@ writeList2BChan :: [a] -> BChan a -> IO ()
 writeList2BChan lst chan = mapM_ (writeBChan chan) lst
 
 getBChanSnapshot :: BChan a -> IO [a]
-getBChanSnapshot (BChan _ _ d) =  readMVar d >>= return . toList
+getBChanSnapshot (BChan _ _ d) =  liftM  toList (readMVar d)
 
 
