@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Concurrent
 import Control.Concurrent.BChan
+import Control.Concurrent.BMChan
 import Data.IORef
 
 import Data.Maybe
@@ -24,6 +25,7 @@ main = defaultMain tests
 tests = [ testGroup "specification" 
             [ testCase "pushing in channel" test_writeChan
             , testCase "message passing" test_messagePassing
+            , testCase "closing"         test_close
             ]
         ]
 
@@ -75,5 +77,16 @@ test_messagePassing = do
           testList s (x1:xs) (y:ys)  | x1==y = testList s xs ys
                                      | otherwise = assertFailure $ s++": values doesn't match"
 
-
-
+test_close = do
+      chan <- newBMChan 16
+      lock <- newEmptyMVar 
+      forkIO $ let go = do
+                      mx <- readBMChan chan
+                      if isJust mx then go else return ()
+               in go >> putMVar lock ()
+      forM_ [1..10000] (writeBMChan chan)
+      closeBMChan chan
+      closed <- isClosedBMChan chan
+      assertBool "closed" closed
+      _ <- takeMVar lock
+      assertBool "done" True

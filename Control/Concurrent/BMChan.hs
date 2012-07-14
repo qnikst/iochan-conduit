@@ -1,5 +1,6 @@
 module Control.Concurrent.BMChan
-  ( newBMChan
+  ( BMChan
+  , newBMChan
   , readBMChan
   , writeBMChan
   , isClosedBMChan 
@@ -38,35 +39,33 @@ readBMChan (BMChan c r w v) = do
     isC <- readIORef c
     if isC then -- if channel is closed we have 2 situations
               case toList l of
-                [] -> cleanup r                                 -- if list finished: we should signal all readers
+                []    -> cleanup                                -- if list finished: we should signal all readers
                 (x:_) -> signalQSem w >> return (tail l,Just x) -- otherwise work as in normal situation
-           else normal l w         -- if channel is open then work as is
-  where normal l w = do
+           else normal l                                        -- if channel is open then work as is
+  where normal l = do
           let res = head l              -- read list head
           signalQSem w                  -- signal writer
           return (tail l, Just res)     -- update
-        cleanup r = do
+        cleanup = do
           signalQSem r                  -- wake up another reader
           return (empty, Nothing)
 
-writeBMChan :: BMChan a -> a -> IO ()
+writeBMChan :: BMChan a -> a -> IO (Bool)
 writeBMChan (BMChan c r w v) val = do
   waitQSem w
   modifyMVar v $ \l -> do
     isC <- readIORef c
-    if isC then signalQSem w >> return (l,())
+    if isC then signalQSem w >> return (l,False)
            else do
             signalQSem r
-            return (l `snoc` val,())
+            return (l `snoc` val,True)
 
 
 closeBMChan :: BMChan a -> IO ()
 closeBMChan (BMChan c r w v) =
   withMVar v $ \l -> do -- take a lock of structure
     writeIORef c True
-    case toList l of
-      [] -> signalQSem r
-      _  -> return ()
+    signalQSem r
     signalQSem w                     -- wake up writer
 
 isClosedBMChan :: BMChan a -> IO Bool
