@@ -20,9 +20,11 @@ Cabal-version:       >=1.8
 Library
   Exposed-modules:     
     Data.Conduit.Chan
+    Control.Concurrent.BChan
   Build-depends:       base
                      , conduit == 0.5.*
                      , transformers == 0.3.*
+                     , dlist == 0.5.*
   Ghc-options:       -Wall
 
 test-suite iochan-test
@@ -32,6 +34,18 @@ test-suite iochan-test
   ghc-options:        -rtsopts=all -threaded
   build-depends:      base
                     , conduit == 0.5.*
+                    , transformers == 0.3.*
+                    , test-framework
+                    , test-framework-hunit
+                    , HUnit
+                    , iochan-conduit
+
+test-suite bchan-test
+  type:               exitcode-stdio-1.0
+  main-is:            BChan.hs
+  hs-source-dirs:     test/
+  ghc-options:        -rtsopts=all -threaded
+  build-depends:      base
                     , transformers == 0.3.*
                     , test-framework
                     , test-framework-hunit
