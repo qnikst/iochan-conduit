@@ -45,11 +45,11 @@ module Data.Conduit.Chan
   )
   where
 
-import Data.Conduit
-import Data.Maybe
+import           Control.Concurrent.Chan
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Concurrent.Chan
+import           Data.Conduit
+import           Data.Maybe
 
 sinkInfiniteChan :: (MonadIO m) => Chan a -> Sink a m ()
 sinkInfiniteChan chan = go
