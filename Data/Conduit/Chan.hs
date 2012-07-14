@@ -42,10 +42,15 @@ module Data.Conduit.Chan
   , sourceInfiniteChan
   , sinkEndChan
   , sourceEndChan
+  , sinkInfiniteBChan
+  , sourceInfiniteBChan
+  , sinkEndBChan
+  , sourceEndBChan
   )
   where
 
 import           Control.Concurrent.Chan
+import           Control.Concurrent.BChan
 import Control.Monad
 import Control.Monad.IO.Class
 import           Data.Conduit
@@ -82,4 +87,38 @@ sourceEndChan closeAll chan = go
         Just x -> yield x >> go
         Nothing -> do
           when closeAll $ liftIO (writeChan chan Nothing)
+          return ()
+
+
+sinkInfiniteBChan :: (MonadIO m) => BChan a -> Sink a m ()
+sinkInfiniteBChan chan = go
+  where
+    go = do
+       mx <- await
+       case mx of 
+         Just x  -> do 
+            liftIO $ writeBChan chan x
+            go
+         Nothing -> return ()
+
+sourceInfiniteBChan :: (MonadIO m) => BChan a -> Source m a
+sourceInfiniteBChan chan = forever $ liftIO (readBChan chan) >>= yield
+
+sinkEndBChan :: (MonadIO m) => BChan (Maybe a) -> Sink a m ()
+sinkEndBChan chan = go
+  where 
+    go = do
+      mx <- await 
+      liftIO (writeBChan chan mx)
+      when (isJust mx) go
+
+sourceEndBChan :: (MonadIO m) => Bool -> BChan (Maybe a) -> Source m a
+sourceEndBChan closeAll chan = go
+  where
+    go = do
+      mx <- liftIO $ readBChan chan
+      case mx of
+        Just x -> yield x >> go
+        Nothing -> do
+          when closeAll $ liftIO (writeBChan chan Nothing)
           return ()
