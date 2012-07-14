@@ -23,6 +23,7 @@ Library
   Build-depends:       base
                      , conduit == 0.5.*
                      , transformers == 0.3.*
+  Ghc-options:       -Wall
 
 test-suite iochan-test
   type:               exitcode-stdio-1.0

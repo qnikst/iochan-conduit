@@ -48,7 +48,6 @@ module Data.Conduit.Chan
 import Data.Conduit
 import Data.Maybe
 import Control.Monad
-import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Concurrent.Chan
 
