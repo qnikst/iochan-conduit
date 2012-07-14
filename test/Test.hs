@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Concurrent
 import Control.Concurrent.Chan
+import Control.Concurrent.BMChan
 
 import Data.Conduit
 import Data.Conduit.List
@@ -28,6 +29,9 @@ tests = [ testGroup "infinite stream"
               , testCase "usecase" test_usecaseEndList
               , testCase "close one" test_closeOneEndList
               , testCase "close all" test_closeAllEndList
+              ]
+        , testGroup "BMChan"
+              [ testCase "simple list" test_simpleList
               ]
         ]
 
@@ -118,3 +122,11 @@ test_closeOneEndList = do
       testList = [1..100]
     
 
+test_simpleList = do chan <- newBMChan 16
+                     forkIO . runResourceT $ sourceList testList $$ sinkBMChan chan
+                     lst' <- runResourceT $ sourceBMChan chan $$ consume
+                     assertEqual "for the numbers [1..10000]," testList lst'
+--                     closed <- isClosedBMChan chan
+--                     assertBool "channel is closed after running" closed
+    where
+        testList = [1..10000]
