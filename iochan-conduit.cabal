@@ -16,6 +16,9 @@ Build-type:          Simple
 -- Constraint on the version of Cabal needed to build this package.
 Cabal-version:       >=1.8
 
+Flag bench
+  Description:       build benchmark executables
+  Default:           False
 
 Library
   Exposed-modules:     
@@ -27,6 +30,21 @@ Library
                      , transformers == 0.3.*
                      , dlist == 0.5.*
   Ghc-options:       -Wall
+
+
+Executable bench
+  if flag(bench)
+      Buildable:      True
+  else
+      Buildable:      False
+
+  main-is:            Main.hs
+  ghc-options:        -rtsopts=all -threaded
+  hs-source-dirs:     bench/
+  build-depends:      base
+                    , conduit == 0.5.*
+                    , transformers == 0.3.*
+                    , criterion
 
 test-suite iochan-test
   type:               exitcode-stdio-1.0
