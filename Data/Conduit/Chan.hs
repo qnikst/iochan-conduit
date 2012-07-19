@@ -57,7 +57,39 @@ import           Control.Concurrent.BMChan
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Conduit
+import           Data.Conduit.Internal
 import           Data.Maybe
+
+-- * Helpers to work with MChans
+
+sinkChan :: (MonadIO m) =>
+            (a -> IO ())              -- ^ writer
+         -> IO ()                     -- ^ closer
+         -> Sink a m ()
+sinkChan w c = sink
+  where
+    sink   = NeedInput push close
+    push i = PipeM $ do
+               liftIO $ w i
+               return $ NeedInput push close
+    close  = const $ liftIO c 
+
+sourceChan :: (MonadIO m) =>
+              IO (Maybe a)             -- ^ reader
+           -> IO ()                    -- ^ closer
+           -> Source m a
+sourceChan r c = source
+  where
+    source = PipeM pull
+    pull   = do
+      mx <- liftIO r 
+      case mx of
+        Just x -> return $ HaveOutput source close x
+        Nothing -> do
+          liftIO c
+          return $ Done ()
+    close  = liftIO c
+
 
 sinkInfiniteChan :: (MonadIO m) => Chan a -> Sink a m ()
 sinkInfiniteChan chan = go
@@ -73,25 +105,13 @@ sinkInfiniteChan chan = go
 sourceInfiniteChan :: (MonadIO m) => Chan a -> Source m a
 sourceInfiniteChan chan = forever $ liftIO (readChan chan) >>= yield
 
+
 sinkEndChan :: (MonadIO m) => Chan (Maybe a) -> Sink a m ()
-sinkEndChan chan = go
-  where 
-    go = do
-      mx <- await 
-      liftIO (writeChan chan mx)
-      when (isJust mx) go
+sinkEndChan ch = sinkChan (writeChan ch . Just) (writeChan ch Nothing)
 
 sourceEndChan :: (MonadIO m) => Bool -> Chan (Maybe a) -> Source m a
-sourceEndChan closeAll chan = go
-  where
-    go = do
-      mx <- liftIO $ readChan chan
-      case mx of
-        Just x -> yield x >> go
-        Nothing -> do
-          when closeAll $ liftIO (writeChan chan Nothing)
-          return ()
-
+sourceEndChan True ch  = sourceChan (readChan ch) (writeChan ch Nothing)
+sourceEndChan False ch = sourceChan (readChan ch) (return ())
 
 sinkInfiniteBChan :: (MonadIO m) => BChan a -> Sink a m ()
 sinkInfiniteBChan chan = go
@@ -103,6 +123,7 @@ sinkInfiniteBChan chan = go
             liftIO $ writeBChan chan x
             go
          Nothing -> return ()
+--sinkInfiniteBChan ch = sourceChan (writeBChan ch) (return ())           -- ^ TODO close?
 
 sourceInfiniteBChan :: (MonadIO m) => BChan a -> Source m a
 sourceInfiniteBChan chan = forever $ liftIO (readBChan chan) >>= yield
@@ -128,24 +149,7 @@ sourceEndBChan closeAll chan = go
 
 
 sinkBMChan :: (MonadIO m) => BMChan a -> Sink a m ()
-sinkBMChan chan = go
-  where
-    go = do
-       mx <- await
-       case mx of 
-         Just x  -> do 
-            written <- liftIO $ writeBMChan chan x
-            if written then go
-                       else return ()
-         Nothing -> do
-            liftIO $ closeBMChan chan
-            return ()
+sinkBMChan ch = sinkChan (\x -> writeBMChan ch x >> return ()) (closeBMChan ch)
 
 sourceBMChan :: (MonadIO m) => BMChan a -> Source m a
-sourceBMChan chan = addCleanup (const $ liftIO $ closeBMChan chan) go
-  where
-    go = do 
-      mx <- liftIO $ readBMChan chan
-      case mx of
-        Just x  -> yield x >> go
-        Nothing -> return ()
+sourceBMChan ch = sourceChan (readBMChan ch) (closeBMChan ch)
