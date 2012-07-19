@@ -73,6 +73,8 @@ sinkChan w c = sink
                liftIO $ w i
                return $ NeedInput push close
     close  = const $ liftIO c 
+{-# INLINE sinkChan #-}
+
 
 sourceChan :: (MonadIO m) =>
               IO (Maybe a)             -- ^ reader
@@ -89,6 +91,7 @@ sourceChan r c = source
           liftIO c
           return $ Done ()
     close  = liftIO c
+{-# INLINE sourceChan #-}
 
 
 sinkInfiniteChan :: (MonadIO m) => Chan a -> Sink a m ()

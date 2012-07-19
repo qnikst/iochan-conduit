@@ -29,7 +29,7 @@ Library
                      , conduit == 0.5.*
                      , transformers == 0.3.*
                      , dlist == 0.5.*
-  Ghc-options:       -Wall
+  Ghc-options:       -Wall -O2
 
 
 Executable bench
@@ -39,7 +39,7 @@ Executable bench
       Buildable:      False
 
   main-is:            Main.hs
-  ghc-options:        -rtsopts=all -threaded
+  ghc-options:        -rtsopts=all -threaded -O2
   hs-source-dirs:     bench/
   build-depends:      base
                     , conduit == 0.5.*

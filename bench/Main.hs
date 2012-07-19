@@ -31,16 +31,13 @@ iochan nR nW n = do
 iochan2 nR nW n = do
   ch <- newChan
   lock <- newQSemN 0
-  start_readers <- newEmptyMVar
   forkIO $ do
     runResourceT $ sourceList [1..n] $= CL.map Just $$ sinkEndChan ch
     writeChan ch Nothing
   forM_ [1..nR] $ 
       const . forkIO $ do
-        _ <- readMVar start_readers -- start thread
         runResourceT $ sourceEndChan True ch $= CL.map (f . fromJust) $$ consume
         signalQSemN lock 1
-  putMVar start_readers ()
   waitQSemN lock nR
   return ()
   where f = exp . log . exp . log . exp . log . exp . log . exp . log
@@ -48,14 +45,11 @@ iochan2 nR nW n = do
 stmchan nR nW n = do
   ch <- atomically $ newTBMChan 16
   lock <- newQSemN 0
-  start_readers <- newEmptyMVar
   forkIO $ runResourceT $ sourceList [1..n] $$ sinkTBMChan ch
   forM_ [1..nR] $ 
       const . forkIO $ do
-        _ <- readMVar start_readers -- start thread
         runResourceT $ sourceTBMChan ch $= CL.map f $$ consume
         signalQSemN lock 1
-  putMVar start_readers ()
   waitQSemN lock nR
   return ()
   where f = exp . log . exp . log . exp . log . exp . log . exp . log
@@ -65,7 +59,8 @@ main = defaultMain [
                         , bench "1000:2"  $ nfIO $ iochan 1 2   10000
                         , bench "1000:10" $ nfIO $ iochan 1 10  10000
                         ]
-      , bgroup "iochan2"[ bench "1000"    $ nfIO $ iochan2 1 1   10000
+      ,
+        bgroup "iochan2"[ bench "1000"    $ nfIO $ iochan2 1 1   10000
                         , bench "1000:2"  $ nfIO $ iochan2 1 2   10000
                         , bench "1000:10" $ nfIO $ iochan2 1 10  10000
                         ]
