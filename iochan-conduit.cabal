@@ -29,6 +29,7 @@ Library
                      , conduit == 0.5.*
                      , transformers == 0.3.*
                      , dlist == 0.5.*
+                     , vector == 0.9.*
   Ghc-options:       -Wall -O2
 
 
