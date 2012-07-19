@@ -9,7 +9,6 @@ module Control.Concurrent.BMChan
   where
 
 import           Control.Concurrent
-import           Data.DList
 import           Data.IORef
 import           Data.Vector.Mutable (IOVector)
 import qualified Data.Vector.Mutable as V
