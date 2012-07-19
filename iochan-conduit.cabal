@@ -45,6 +45,9 @@ Executable bench
                     , conduit == 0.5.*
                     , transformers == 0.3.*
                     , criterion
+                    , iochan-conduit
+                    , stm-conduit
+                    , stm
 
 test-suite iochan-test
   type:               exitcode-stdio-1.0
